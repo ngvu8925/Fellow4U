@@ -6,6 +6,9 @@ import '../providers/trip_provider.dart';
 import 'create_new_trip_screen.dart';
 import 'trip_detail_screen.dart';
 import 'next_trip_detail_screen.dart';
+import 'chat_screen.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 
 class MyTripsScreen extends StatefulWidget {
   const MyTripsScreen({super.key});
@@ -19,6 +22,14 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
   final List<String> _tabs = ['Current Trips', 'Next Trips', 'Past Trips', 'Wish List'];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TripProvider>().fetchMyTrips();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tripProvider = context.watch<TripProvider>();
     
@@ -29,10 +40,12 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
           _buildHeader(),
           _buildTabs(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _buildContent(tripProvider),
-            ),
+            child: tripProvider.isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildContent(tripProvider),
+                ),
           ),
         ],
       ),
@@ -59,7 +72,7 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
       case 2:
         return _buildPastTrips(provider.pastTrips);
       case 3:
-        return _buildWishList();
+        return _buildWishList(provider.wishList);
       default:
         return _buildCurrentTrips(provider.currentTrips);
     }
@@ -110,28 +123,29 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
     );
   }
 
-  Widget _buildWishList() {
+  Widget _buildWishList(List<Trip> trips) {
+    if (trips.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 40),
+          child: Text('No saved trips yet.'),
+        ),
+      );
+    }
     return Column(
       children: [
-        _buildWishListCard(
-          image: 'assets/images/Mask Group (2).png', // Sydney Opera House
-          title: 'Melbourne - Sydney',
-          date: 'Jan 30, 2020',
-          duration: '3 days',
-          price: '\$600.00',
-          rating: 5,
-          likes: '1247 likes',
-        ),
-        const SizedBox(height: 20),
-        _buildWishListCard(
-          image: 'assets/images/hanoi_bay.png',
-          title: 'Hanoi - Ha Long Bay',
-          date: 'Jan 30, 2020',
-          duration: '3 days',
-          price: '\$300.00',
-          rating: 5,
-          likes: '1247 likes',
-        ),
+        ...trips.map((trip) => Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: _buildWishListCard(
+            image: trip.image,
+            title: trip.title,
+            date: trip.date,
+            duration: trip.duration,
+            price: trip.price,
+            rating: trip.rating,
+            likes: trip.likes,
+          ),
+        )).toList(),
         const SizedBox(height: 80),
       ],
     );
@@ -742,13 +756,61 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
       showSelectedLabels: true,
       showUnselectedLabels: false,
       onTap: (index) {
-        if (index == 0) Navigator.pop(context);
+        if (index == 0) {
+          Navigator.pop(context);
+        } else if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ChatScreen()),
+          );
+        } else if (index == 3) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationScreen()),
+          );
+        } else if (index == 4) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          );
+        }
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: ''),
-        BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'My Trips'),
-        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: ''),
-        BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ''),
+      items: [
+        const BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: ''),
+        const BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'My Trips'),
+        const BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: ''),
+        BottomNavigationBarItem(
+          icon: Stack(
+            children: [
+              const Icon(Icons.notifications_none),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 12,
+                    minHeight: 12,
+                  ),
+                  child: const Text(
+                    '2',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          label: '',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
       ],
     );

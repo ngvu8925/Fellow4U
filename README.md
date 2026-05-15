@@ -1,16 +1,50 @@
-# untitled1
+# Fellow4U - Travel Application
 
-A new Flutter project.
+## Introduction
+Fellow4U is a travel companion application built with Flutter that connects travelers with local guides.
+
+## Features
+- **Explore**: Discover popular destinations and top-rated guides.
+- **Trip Management**: Plan and track your journeys.
+- **Real-time Chat**: Connect with guides and other travelers via text and voice messages.
+- **Group Chat**: Create and manage group conversations.
+- **Notifications**: Stay updated with trip status and offers.
+- **Profile & Journey**: Showcase your travel memories and manage your account.
+
+## Technology Stack
+- **Framework**: Flutter (Dart)
+- **State Management**: Provider
+- **Service Layer**: Mock API Services for rapid prototyping
+
+## Project Structure
+- `lib/models`: Data structures (User, Trip, Chat, Notification, etc.)
+- `lib/services`: Mock API layer for data handling.
+- `lib/providers`: State management logic.
+- `lib/screens`: UI screens and navigation logic.
+- `lib/widgets`: Reusable UI components.
+
+## API Endpoints (Simulated)
+### Auth
+- `POST /auth/login`
+- `POST /auth/signup`
+### Tours & Guides
+- `GET /tours`
+- `GET /guides/top`
+### Chat & Friends
+- `GET /chats`
+- `POST /chats/{id}/messages`
+- `POST /chats/{id}/voice`
+- `GET /friends`
+### Notifications
+- `GET /notifications`
+### User
+- `GET /user/profile`
+- `GET /user/journeys`
 
 ## Getting Started
+1. Clone the repository.
+2. Run `flutter pub get`.
+3. Run `flutter run`.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+*Developed by ngvu8925*

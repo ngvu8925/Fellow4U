@@ -1,13 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../constants/colors.dart';
+import '../providers/auth_provider.dart';
 import 'explore_screen.dart';
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
   @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  final TextEditingController _emailController = TextEditingController(text: 'test@example.com');
+  final TextEditingController _passwordController = TextEditingController(text: 'password');
+
+  void _handleSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.login(
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (success && mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const ExploreScreen()),
+        (route) => false,
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid email or password')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
@@ -31,7 +70,6 @@ class SignInScreen extends StatelessWidget {
                       color: primaryColor,
                       child: Stack(
                         children: [
-                          // Flight path dashed line
                           Positioned(
                             left: 120,
                             top: 40,
@@ -48,7 +86,6 @@ class SignInScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Cloud big
                           Positioned(
                             right: 70,
                             top: 100,
@@ -65,7 +102,6 @@ class SignInScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Cloud small
                           Positioned(
                             right: 38,
                             top: 95,
@@ -82,7 +118,6 @@ class SignInScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Airplane
                           Positioned(
                             right: 8,
                             top: 38,
@@ -103,7 +138,6 @@ class SignInScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Logo
                   Positioned(
                     left: 28,
                     top: 58,
@@ -149,7 +183,6 @@ class SignInScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // Welcome back text
                     const Text(
                       'Welcome back, Yoo Jin',
                       style: TextStyle(
@@ -160,16 +193,13 @@ class SignInScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 36),
 
-                    // Email
-                    _buildTextField('Email', 'yoojin@gmail.com'),
+                    _buildTextField('Email', 'yoojin@gmail.com', controller: _emailController),
                     const SizedBox(height: 28),
 
-                    // Password
                     _buildTextField('Password', '••••••',
-                        isPassword: true, initialValue: '123456'),
+                        isPassword: true, controller: _passwordController),
                     const SizedBox(height: 10),
 
-                    // Forgot Password
                     const Text(
                       'Forgot Password',
                       style: TextStyle(
@@ -180,7 +210,6 @@ class SignInScreen extends StatelessWidget {
 
                     const SizedBox(height: 36),
 
-                    // Sign In Button
                     SizedBox(
                       width: double.infinity,
                       height: 54,
@@ -192,30 +221,23 @@ class SignInScreen extends StatelessWidget {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ExploreScreen(),
+                        onPressed: authProvider.isLoading ? null : _handleSignIn,
+                        child: authProvider.isLoading 
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'SIGN IN',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                            (route) => false,
-                          );
-                        },
-                        child: const Text(
-                          'SIGN IN',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    // or sign in with
                     const Center(
                       child: Text(
                         'or sign in with',
@@ -228,24 +250,20 @@ class SignInScreen extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    // Social login buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Facebook
                         _socialButton(
                           color: const Color(0xFF3B5998),
                           icon: Icons.facebook,
                         ),
                         const SizedBox(width: 16),
-                        // KakaoTalk
                         _socialButton(
                           color: const Color(0xFFFEE500),
                           text: 'TALK',
                           textColor: Colors.black87,
                         ),
                         const SizedBox(width: 16),
-                        // LINE
                         _socialButton(
                           color: const Color(0xFF00C300),
                           text: 'LINE',
@@ -256,7 +274,6 @@ class SignInScreen extends StatelessWidget {
 
                     const SizedBox(height: 40),
 
-                    // Don't have an account? Sign Up
                     Center(
                       child: GestureDetector(
                         onTap: () {
@@ -295,7 +312,7 @@ class SignInScreen extends StatelessWidget {
   }
 
   Widget _buildTextField(String label, String hint,
-      {bool isPassword = false, String? initialValue}) {
+      {bool isPassword = false, TextEditingController? controller}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -309,7 +326,7 @@ class SignInScreen extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         TextFormField(
-          initialValue: initialValue,
+          controller: controller,
           obscureText: isPassword,
           obscuringCharacter: '•',
           style: const TextStyle(

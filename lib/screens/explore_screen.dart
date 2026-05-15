@@ -3,11 +3,48 @@ import 'package:flutter/services.dart';
 import 'search_screen.dart';
 import 'tour_detail_screen.dart';
 import 'my_trips_screen.dart';
+import 'chat_screen.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 import '../constants/colors.dart';
 import 'guide_profile_screen.dart';
+import '../services/trip_service.dart';
+import '../services/guide_service.dart';
+import '../services/news_service.dart';
+import '../models/trip_model.dart';
+import '../models/guide_model.dart';
 
-class ExploreScreen extends StatelessWidget {
+class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
+
+  @override
+  State<ExploreScreen> createState() => _ExploreScreenState();
+}
+
+class _ExploreScreenState extends State<ExploreScreen> {
+  final TripService _tripService = TripService();
+  final GuideService _guideService = GuideService();
+  final NewsService _newsService = NewsService();
+
+  late Future<List<Trip>> _topJourneysFuture;
+  late Future<List<Guide>> _bestGuidesFuture;
+  late Future<List<Map<String, dynamic>>> _topExperiencesFuture;
+  late Future<List<Trip>> _featuredToursFuture;
+  late Future<List<News>> _travelNewsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    _topJourneysFuture = _tripService.getTopJourneys();
+    _bestGuidesFuture = _guideService.getBestGuides();
+    _topExperiencesFuture = _tripService.getTopExperiences();
+    _featuredToursFuture = _tripService.getFeaturedTours();
+    _travelNewsFuture = _newsService.getTravelNews();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +73,6 @@ class ExploreScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Gradient overlay
                   Container(
                     height: 220,
                     decoration: BoxDecoration(
@@ -44,7 +80,7 @@ class ExploreScreen extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.2),
+                          Colors.black.withValues(alpha: 0.2),
                           Colors.transparent,
                         ],
                       ),
@@ -118,7 +154,6 @@ class ExploreScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Search Bar
                   Positioned(
                     bottom: -25,
                     left: 20,
@@ -130,7 +165,7 @@ class ExploreScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -173,52 +208,43 @@ class ExploreScreen extends StatelessWidget {
               const SizedBox(height: 45),
 
               // Top Journeys
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Text(
-                  'Top Journeys',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              _buildSectionHeader('Top Journeys'),
               const SizedBox(height: 16),
               SizedBox(
-                height: 280, // Increased to avoid overflow
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    right: 4,
-                    bottom: 20,
-                  ),
-                  children: [
-                    _buildJourneyCard(
-                      image: 'assets/images/danang_pool.png', // Pool image
-                      title: 'Da Nang - Ba Na - Hoi An',
-                      date: 'Jan 30, 2020',
-                      duration: '3 days',
-                      price: '\$400.00',
-                      rating: 5,
-                      likes: '1247 likes',
-                      isSaved: true,
-                      context: context,
-                    ),
-                    const SizedBox(width: 16),
-                    _buildJourneyCard(
-                      image: 'assets/images/thailand.png',
-                      title: 'Thailand',
-                      date: 'Jan 30, 2020',
-                      duration: '3 days',
-                      price: '\$600.00',
-                      rating: 5,
-                      likes: '1247 likes',
-                      context: context,
-                    ),
-                    const SizedBox(width: 16),
-                  ],
+                height: 280,
+                child: FutureBuilder<List<Trip>>(
+                  future: _topJourneysFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    final journeys = snapshot.data ?? [];
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(left: 20, right: 4, bottom: 20),
+                      itemCount: journeys.length,
+                      itemBuilder: (context, index) {
+                        final trip = journeys[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: _buildJourneyCard(
+                            image: trip.image,
+                            title: trip.title,
+                            date: trip.date,
+                            duration: trip.duration,
+                            price: trip.price,
+                            rating: trip.rating,
+                            likes: trip.likes,
+                            isSaved: trip.isSaved,
+                            context: context,
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
@@ -250,87 +276,72 @@ class ExploreScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.85,
-                  children: [
-                    _buildGuideCard(
-                      context: context,
-                      image: 'assets/images/Guide Modal.png',
-                      name: 'Tuan Tran',
-                      location: 'Danang, Vietnam',
-                      rating: 5,
-                      reviews: '127 Reviews',
-                    ),
-                    _buildGuideCard(
-                      context: context,
-                      image: 'assets/images/Guide Modal (1).png',
-                      name: 'Emmy',
-                      location: 'Hanoi, Vietnam',
-                      rating: 4,
-                      reviews: '89 Reviews',
-                    ),
-                    _buildGuideCard(
-                      context: context,
-                      image: 'assets/images/Guide Modal (2).png',
-                      name: 'Linh Hana',
-                      location: 'Danang, Vietnam',
-                      rating: 5,
-                      reviews: '127 Reviews',
-                    ),
-                    _buildGuideCard(
-                      context: context,
-                      image: 'assets/images/Guide Modal (3).png',
-                      name: 'Khai Ho',
-                      location: 'Ho Chi Minh, Vietnam',
-                      rating: 5,
-                      reviews: '127 Reviews',
-                    ),
-                  ],
+                child: FutureBuilder<List<Guide>>(
+                  future: _bestGuidesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final guides = snapshot.data ?? [];
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: guides.length,
+                      itemBuilder: (context, index) {
+                        final guide = guides[index];
+                        return _buildGuideCard(
+                          context: context,
+                          image: guide.avatar,
+                          name: guide.name,
+                          location: guide.location,
+                          rating: guide.rating.toInt(),
+                          reviews: '${guide.reviews} Reviews',
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
               const SizedBox(height: 30),
 
               // Top Experiences
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Text(
-                  'Top Experiences',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              _buildSectionHeader('Top Experiences'),
               const SizedBox(height: 16),
               SizedBox(
                 height: 300,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    _buildExperienceCard(
-                      image: 'assets/images/Mask Group (1).png',
-                      guideImage: 'assets/images/Guide Modal.png',
-                      guideName: 'Tuan Tran',
-                      title: '2 Hour Bicycle Tour exploring Hoian',
-                      location: 'Hoian, Vietnam',
-                    ),
-                    const SizedBox(width: 16),
-                    _buildExperienceCard(
-                      image: 'assets/images/Group 111.png',
-                      guideImage: 'assets/images/Guide Modal (2).png',
-                      guideName: 'Linh Hana',
-                      title: '1 day at Bana Hill',
-                      location: 'Bana, Vietnam',
-                    ),
-                  ],
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _topExperiencesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final experiences = snapshot.data ?? [];
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: experiences.length,
+                      itemBuilder: (context, index) {
+                        final exp = experiences[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: _buildExperienceCard(
+                            image: exp['image'],
+                            guideImage: exp['guideImage'],
+                            guideName: exp['guideName'],
+                            title: exp['title'],
+                            location: exp['location'],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
@@ -362,47 +373,37 @@ class ExploreScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-                children: [
-                  _buildFeaturedCard(
-                    image: 'assets/images/danang_pool.png',
-                    title: 'Da Nang - Ba Na - Hoi An',
-                    date: 'Jan 30, 2020',
-                    duration: '3 days',
-                    price: '\$400.00',
-                    rating: 5,
-                    likes: '1247 likes',
-                    isLiked: false,
-                    context: context,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFeaturedCard(
-                    image: 'assets/images/duc_ba_church.png',
-                    title: 'Melbourne - Sydney',
-                    date: 'Jan 30, 2020',
-                    duration: '3 days',
-                    price: '\$600.00',
-                    rating: 5,
-                    likes: '1247 likes',
-                    isLiked: true,
-                    context: context,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFeaturedCard(
-                    image: 'assets/images/hanoi_bay.png',
-                    title: 'Hanoi - Ha Long Bay',
-                    date: 'Jan 30, 2020',
-                    duration: '3 days',
-                    price: '\$300.00',
-                    rating: 5,
-                    likes: '1247 likes',
-                    isLiked: false,
-                    context: context,
-                  ),
-                ],
+              FutureBuilder<List<Trip>>(
+                future: _featuredToursFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final tours = snapshot.data ?? [];
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                    itemCount: tours.length,
+                    itemBuilder: (context, index) {
+                      final tour = tours[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildFeaturedCard(
+                          image: tour.image,
+                          title: tour.title,
+                          date: tour.date,
+                          duration: tour.duration,
+                          price: tour.price,
+                          rating: tour.rating,
+                          likes: tour.likes,
+                          isLiked: tour.isSaved,
+                          context: context,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
 
               const SizedBox(height: 10),
@@ -433,29 +434,31 @@ class ExploreScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  _buildNewsCard(
-                    title: 'New Destination in Danang City',
-                    date: 'Feb 5, 2020',
-                    image: 'assets/images/Mask Group copy.png',
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNewsCard(
-                    title: '\$1 Flight Ticket',
-                    date: 'Feb 5, 2020',
-                    image: 'assets/images/Group 112.png',
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNewsCard(
-                    title: 'Visit Korea in this Tet Holiday',
-                    date: 'Jan 26, 2020',
-                    image: 'assets/images/Group 114.png',
-                  ),
-                ],
+              FutureBuilder<List<News>>(
+                future: _travelNewsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final newsList = snapshot.data ?? [];
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: newsList.length,
+                    itemBuilder: (context, index) {
+                      final news = newsList[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: _buildNewsCard(
+                          title: news.title,
+                          date: news.date,
+                          image: news.image,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
 
               const SizedBox(height: 40),
@@ -475,23 +478,66 @@ class ExploreScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const MyTripsScreen()),
               );
+            } else if (index == 2) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChatScreen()),
+              );
+            } else if (index == 3) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+              );
+            } else if (index == 4) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
             }
           },
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.explore),
               label: 'Explore',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.location_on_outlined),
               label: '',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),
               label: '',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none),
+              icon: Stack(
+                children: [
+                  const Icon(Icons.notifications_none),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 12,
+                        minHeight: 12,
+                      ),
+                      child: const Text(
+                        '2',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               label: '',
             ),
             BottomNavigationBarItem(
@@ -499,6 +545,20 @@ class ExploreScreen extends StatelessWidget {
               label: '',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
         ),
       ),
     );
@@ -525,145 +585,120 @@ class ExploreScreen extends StatelessWidget {
         );
       },
       child: Container(
-      width: 220,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+        width: 220,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  child: Image.asset(
+                    image,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(height: 140, color: Colors.grey[300]),
+                  ),
                 ),
-                child: Image.asset(
-                  image,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Container(height: 140, color: Colors.grey[300]),
-                ),
-              ),
-              // Gradient for text readability
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.4),
-                        Colors.transparent,
-                      ],
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.4),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              if (isSaved)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    // No background circle in the new design! Just the icon
+                if (isSaved)
+                  Positioned(
+                    top: 10,
+                    right: 10,
                     child: const Icon(
                       Icons.bookmark_border,
                       color: Colors.white,
                       size: 20,
                     ),
                   ),
+                Positioned(
+                  bottom: 8,
+                  left: 10,
+                  child: Text(
+                    likes,
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
                 ),
-              Positioned(
-                bottom: 8,
-                left: 10,
-                child: Text(
-                  likes,
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    _buildIconText(Icons.calendar_today, date),
+                    _buildIconText(Icons.access_time, duration),
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          Expanded(
-            // Expanded prevents bottom overflow
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 12,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        date,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 12,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        duration,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: primaryColor,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
+    );
+  }
+
+  Widget _buildIconText(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+        ),
+      ],
     );
   }
 
@@ -708,7 +743,6 @@ class ExploreScreen extends StatelessWidget {
                         Container(color: Colors.grey[300]),
                   ),
                 ),
-                // Gradient for text readability
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -723,7 +757,7 @@ class ExploreScreen extends StatelessWidget {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                           Colors.transparent,
                         ],
                       ),
@@ -759,10 +793,10 @@ class ExploreScreen extends StatelessWidget {
                 ),
               ),
             ],
-          ), // Row
-        ], // Column - Dấu ngoặc vuông này phải nằm TRƯỚC dấu đóng của Column
-      ), // Column
-    ); // GestureDetector
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildExperienceCard({
@@ -811,10 +845,7 @@ class ExploreScreen extends StatelessWidget {
                     ),
                     Container(
                       transform: Matrix4.translationValues(0, -10, 0),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: primaryColor,
                         borderRadius: BorderRadius.circular(12),
@@ -874,153 +905,92 @@ class ExploreScreen extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const TourDetailScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const TourDetailScreen()),
         );
       },
       child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.asset(
+                    image,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey[300]),
+                  ),
                 ),
-                child: Image.asset(
-                  image,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Container(height: 140, color: Colors.grey[300]),
-                ),
-              ),
-              // Gradient for text readability
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.4),
-                        Colors.transparent,
-                      ],
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [Colors.black.withValues(alpha: 0.4), Colors.transparent],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: const Icon(Icons.bookmark_border, color: Colors.white),
-              ),
-              Positioned(
-                bottom: 10,
-                left: 10,
-                child: Text(
-                  likes,
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: const Icon(Icons.bookmark_border, color: Colors.white),
                 ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today,
-                          size: 12,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          date,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.access_time,
-                          size: 12,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          duration,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      price,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: primaryColor,
-                      ),
-                    ),
-                  ],
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: Text(likes, style: const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      _buildIconText(Icons.calendar_today, date),
+                      const SizedBox(height: 4),
+                      _buildIconText(Icons.access_time, duration),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: primaryColor, size: 20),
+                      const SizedBox(height: 16),
+                      Text(price, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -1032,10 +1002,7 @@ class ExploreScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         const SizedBox(height: 4),
         Text(date, style: const TextStyle(color: Colors.grey, fontSize: 14)),
         const SizedBox(height: 8),
@@ -1046,8 +1013,7 @@ class ExploreScreen extends StatelessWidget {
             height: 140,
             width: double.infinity,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(height: 140, color: Colors.grey[300]),
+            errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey[300]),
           ),
         ),
       ],

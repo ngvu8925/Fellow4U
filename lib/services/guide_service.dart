@@ -1,0 +1,100 @@
+import '../models/guide_model.dart';
+
+class GuideService {
+  Future<List<Guide>> getBestGuides() async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    return [
+      Guide(
+        id: 'g1',
+        name: 'Tuan Tran',
+        avatar: 'assets/images/Guide Modal.png',
+        location: 'Da Nang, Vietnam',
+        rating: 4.9,
+        reviews: 124,
+        languages: ['English', 'Vietnamese'],
+        description: 'I am a local guide in Da Nang with 5 years of experience...',
+      ),
+      Guide(
+        id: 'g2',
+        name: 'Emmy',
+        avatar: 'assets/images/Guide Modal (1).png',
+        location: 'Hanoi, Vietnam',
+        rating: 4.8,
+        reviews: 98,
+        languages: ['English', 'Korean', 'Vietnamese'],
+      ),
+      Guide(
+        id: 'g3',
+        name: 'Linh Hana',
+        avatar: 'assets/images/Guide Modal (2).png',
+        location: 'Da Nang, Vietnam',
+        rating: 5.0,
+        reviews: 45,
+        languages: ['English', 'Japanese'],
+      ),
+      Guide(
+        id: 'g4',
+        name: 'Khai Ho',
+        avatar: 'assets/images/Guide Modal (3).png',
+        location: 'Ho Chi Minh, Vietnam',
+        rating: 4.7,
+        reviews: 76,
+        languages: ['English', 'French'],
+      ),
+      Guide(
+        id: 'g5',
+        name: 'Minh Anh',
+        avatar: 'assets/images/Mask Group copy.png',
+        location: 'Hue, Vietnam',
+        rating: 4.9,
+        reviews: 56,
+        languages: ['English', 'Vietnamese'],
+      ),
+      Guide(
+        id: 'g6',
+        name: 'Yoo Jin',
+        avatar: 'assets/images/Mask Group (3).png',
+        location: 'Seoul, Korea',
+        rating: 4.9,
+        reviews: 210,
+        languages: ['Korean', 'English'],
+      ),
+      Guide(
+        id: 'g7',
+        name: 'Somsak',
+        avatar: 'assets/images/Mask Group copy 4.png',
+        location: 'Bangkok, Thailand',
+        rating: 4.6,
+        reviews: 132,
+        languages: ['Thai', 'English'],
+      ),
+      Guide(
+        id: 'g8',
+        name: 'Elena',
+        avatar: 'assets/images/Mask Group (1).png',
+        location: 'Paris, France',
+        rating: 5.0,
+        reviews: 88,
+        languages: ['French', 'English', 'Spanish'],
+      ),
+      Guide(
+        id: 'g9',
+        name: 'John Smith',
+        avatar: 'assets/images/Mask Group (2).png',
+        location: 'Sydney, Australia',
+        rating: 4.8,
+        reviews: 154,
+        languages: ['English'],
+      ),
+      Guide(
+        id: 'g10',
+        name: 'Aiko',
+        avatar: 'assets/images/Mask Group copy 2.png',
+        location: 'Tokyo, Japan',
+        rating: 4.9,
+        reviews: 92,
+        languages: ['Japanese', 'English'],
+      ),
+    ];
+  }
+}

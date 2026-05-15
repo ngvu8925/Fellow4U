@@ -11,6 +11,8 @@ class Trip {
   final String guideAvatar;
   final String status;
   final List<String> attractions;
+  final int rating;
+  final String likes;
   bool isSaved;
   bool isFinished;
 
@@ -27,6 +29,8 @@ class Trip {
     required this.guideAvatar,
     this.status = '',
     this.attractions = const [],
+    this.rating = 5,
+    this.likes = '0 likes',
     this.isSaved = false,
     this.isFinished = false,
   });

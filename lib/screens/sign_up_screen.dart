@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../constants/colors.dart';
+import '../providers/auth_provider.dart';
 import 'sign_in_screen.dart';
 import 'explore_screen.dart';
 
@@ -13,9 +15,62 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   int _userType = 1; // 1 = Traveler, 2 = Guide
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _countryController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _countryController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    final name = '${_firstNameController.text} ${_lastNameController.text}'.trim();
+    final success = await context.read<AuthProvider>().signUp(name, email, password);
+    if (success && mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const ExploreScreen()),
+        (route) => false,
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration failed. Try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
@@ -42,7 +97,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           color: primaryColor,
                           child: Stack(
                             children: [
-                              // Flight path dashed line - centered
                               Positioned(
                                 left: 120,
                                 top: 40,
@@ -55,48 +109,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     'assets/images/Vector 1.png',
                                     width: 260,
                                     fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox(),
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
                                   ),
                                 ),
                               ),
-                              // Cloud big - center right
-                              Positioned(
-                                right: 70,
-                                top: 100,
-                                child: ColorFiltered(
-                                  colorFilter: const ColorFilter.mode(
-                                    Color(0xFF15A888),
-                                    BlendMode.srcIn,
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/Vector 6.png',
-                                    width: 50,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox(),
-                                  ),
-                                ),
-                              ),
-                              // Cloud small - near airplane
-                              Positioned(
-                                right: 38,
-                                top: 95,
-                                child: ColorFiltered(
-                                  colorFilter: const ColorFilter.mode(
-                                    Color(0xFF15A888),
-                                    BlendMode.srcIn,
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/Vector 6.png',
-                                    width: 30,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox(),
-                                  ),
-                                ),
-                              ),
-                              // Airplane - upper right
                               Positioned(
                                 right: 8,
                                 top: 38,
@@ -109,8 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     'assets/images/Vector.png',
                                     width: 65,
                                     fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox(),
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
                                   ),
                                 ),
                               ),
@@ -118,7 +133,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                       ),
-                      // Logo
                       Positioned(
                         left: 28,
                         top: 58,
@@ -134,7 +148,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               'assets/images/Group 3.png',
                               width: 36,
                               height: 36,
-                              errorBuilder: (_, __, ___) => const Icon(
+                              errorBuilder: (context, error, stackTrace) => const Icon(
                                 Icons.eco_rounded,
                                 color: primaryColor,
                                 size: 36,
@@ -164,7 +178,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 28),
 
-                        // Radio Buttons
                         Row(
                           children: [
                             _buildRadio(1, 'Traveler'),
@@ -174,48 +187,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 28),
 
-                        // First Name & Last Name
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTextField('First Name', 'Yoo'),
+                              child: _buildTextField('First Name', 'Yoo', _firstNameController),
                             ),
                             const SizedBox(width: 20),
                             Expanded(
-                              child: _buildTextField('Last Name', 'Jin'),
+                              child: _buildTextField('Last Name', 'Jin', _lastNameController),
                             ),
                           ],
                         ),
                         const SizedBox(height: 24),
 
-                        // Country
-                        _buildTextField('Country', 'Country'),
+                        _buildTextField('Country', 'Country', _countryController),
                         const SizedBox(height: 24),
 
-                        // Email
-                        _buildTextField('Email', 'Type email'),
+                        _buildTextField('Email', 'Type email', _emailController),
                         const SizedBox(height: 24),
 
-                        // Password
                         _buildTextField(
                           'Password',
                           'Type password',
+                          _passwordController,
                           helperText: 'Password has more than 6 letters',
                           isPassword: true,
                         ),
                         const SizedBox(height: 24),
 
-                        // Confirm Password
                         _buildTextField(
                           'Confirm Password',
                           '••••••',
+                          _confirmPasswordController,
                           isPassword: true,
-                          initialValue: '123456',
                         ),
 
                         const SizedBox(height: 36),
 
-                        // Terms & Conditions
                         Center(
                           child: RichText(
                             text: const TextSpan(
@@ -239,7 +247,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Sign Up Button
                         SizedBox(
                           width: double.infinity,
                           height: 54,
@@ -251,38 +258,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: () {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ExploreScreen(),
-                                ),
-                                (route) => false,
-                              );
-                            },
-                            child: const Text(
-                              'SIGN UP',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                            onPressed: authProvider.isLoading ? null : _handleSignUp,
+                            child: authProvider.isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text(
+                                    'SIGN UP',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                           ),
                         ),
 
                         const SizedBox(height: 32),
 
-                        // Sign In text
                         Center(
                           child: GestureDetector(
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignInScreen(),
-                                ),
+                                MaterialPageRoute(builder: (_) => const SignInScreen()),
                               );
                             },
                             child: RichText(
@@ -357,10 +355,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildTextField(
     String label,
-    String hint, {
+    String hint,
+    TextEditingController controller, {
     String? helperText,
     bool isPassword = false,
-    String? initialValue,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,7 +373,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         const SizedBox(height: 6),
         TextFormField(
-          initialValue: initialValue,
+          controller: controller,
           obscureText: isPassword,
           obscuringCharacter: '•',
           style: const TextStyle(fontSize: 16, color: Colors.black87),
